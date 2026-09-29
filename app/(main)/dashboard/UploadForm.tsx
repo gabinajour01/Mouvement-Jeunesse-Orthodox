@@ -1,0 +1,67 @@
+'use client'
+
+import { useState } from 'react'
+import { uploadDocument } from './actions'
+
+export default function UploadForm({ subjects }: { subjects: any[] }) {
+  const [loading, setLoading] = useState(false)
+  const [message, setMessage] = useState('')
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault()
+    setLoading(true)
+    setMessage('')
+
+    const formData = new FormData(e.currentTarget)
+    const result = await uploadDocument(formData)
+
+    if (result?.error) {
+      setMessage(`Error: ${result.error}`)
+    } else {
+      setMessage('Upload successful!')
+      ;(e.target as HTMLFormElement).reset()
+    }
+    setLoading(false)
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4 bg-white p-6 rounded-lg shadow">
+      <h3 className="text-lg font-medium">Upload Document</h3>
+      
+      {message && (
+        <div className={`p-3 rounded ${message.includes('Error') ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+          {message}
+        </div>
+      )}
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Subject</label>
+        <select name="subject_id" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border">
+          <option value="">Select a subject...</option>
+          {subjects?.map((s) => (
+             <option key={s.id} value={s.id}>{s.title}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Title</label>
+        <input type="text" name="title" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">Subtitle / Topic</label>
+        <input type="text" name="subtitle" required className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border" />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700">File</label>
+        <input type="file" name="file" required className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
+      </div>
+
+      <button type="submit" disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 disabled:opacity-50">
+        {loading ? 'Uploading...' : 'Upload'}
+      </button>
+    </form>
+  )
+}
