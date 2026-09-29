@@ -77,3 +77,53 @@ export async function uploadDocument(formData: FormData) {
     return { error: err instanceof Error ? err.message : 'Unexpected server error occurred.' }
   }
 }
+
+export async function deleteDocument(id: string) {
+  const supabase = await createClient()
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { error: 'You must be signed in to delete documents.' }
+  }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profileError || profile?.role !== 'admin') {
+    return { error: 'Only admins can delete documents.' }
+  }
+
+  const { data: document, error: documentError } = await supabase
+    .from('subject_documents')
+    .select('file_path')
+    .eq('id', id)
+    .single()
+
+  if (documentError || !document) {
+    return { error: 'Document not found.' }
+  }
+
+  const { error: storageError } = await supabase.storage
+    .from(BUCKET_NAME)
+    .remove([document.file_path])
+
+  if (storageError) {
+    return { error: `Storage Error: ${storageError.message}` }
+  }
+
+  const { error: dbError } = await supabase
+    .from('subject_documents')
+    .delete()
+    .eq('id', id)
+
+  if (dbError) {
+    return { error: `Database Error: ${dbError.message}` }
+  }
+
+  revalidatePath('/')
+  revalidatePath('/dashboard')
+  return { success: true }
+}

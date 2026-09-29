@@ -7,10 +7,10 @@ import { Trash2 } from 'lucide-react'
 export default function DocumentList({ documents }: { documents: any[] }) {
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  async function handleDelete(id: string, filePath: string) {
+  async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this document?')) return
     setDeletingId(id)
-    await deleteDocument(id, filePath)
+    await deleteDocument(id)
     setDeletingId(null)
   }
 
@@ -31,7 +31,7 @@ export default function DocumentList({ documents }: { documents: any[] }) {
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{doc.subjects?.title}</td>
               <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                 <button
-                  onClick={() => handleDelete(doc.id, doc.file_path)}
+                  onClick={() => handleDelete(doc.id)}
                   disabled={deletingId === doc.id}
                   className="text-red-600 hover:text-red-900 disabled:opacity-50 flex items-center"
                 >
