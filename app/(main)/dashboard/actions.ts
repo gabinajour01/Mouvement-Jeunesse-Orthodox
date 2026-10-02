@@ -2,6 +2,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+import { uploadFileToGoogleDrive } from '@/utils/googleDrive'
 
 const BUCKET_NAME = 'Mjo docs'
 
@@ -33,40 +34,29 @@ export async function uploadDocument(formData: FormData) {
         return { error: 'Please select a file to upload or enter a link.' }
       }
 
-      // 1. Verify the signed-in session required by the Storage RLS policy.
+      // 1. Verify the signed-in session
       const { data: { user }, error: authError } = await supabase.auth.getUser()
       if (authError || !user) {
         return { error: 'Your session has expired. Please sign in again before uploading.' }
       }
 
-      // 2. Format file path with original extension
+      // 2. Upload file directly to Google Drive
       const fileExt = file.name.includes('.') ? `.${file.name.split('.').pop()}` : ''
-      const fileName = `${crypto.randomUUID()}${fileExt}`
-      const filePath = `${subject_id}/${fileName}`
-      const contentType = file.type || 'application/octet-stream'
+      const customFileName = `${title}${fileExt}`
 
-      // 3. Upload to Storage
-      const { error: uploadError } = await supabase.storage
-        .from(BUCKET_NAME)
-        .upload(filePath, file, { contentType, upsert: false })
-
-      if (uploadError) {
-        console.error('Storage Upload Error:', uploadError)
-        if (/row-level security policy/i.test(uploadError.message)) {
-          return {
-            error: 'Supabase is missing the upload permission. Run supabase/migrations/20260928000000_allow_authenticated_uploads_mjo_docs.sql in your project SQL Editor, then retry.',
-          }
+      try {
+        const driveResult = await uploadFileToGoogleDrive({
+          file,
+          customName: customFileName,
+        })
+        finalFileUrl = driveResult.fileUrl
+        finalFilePath = `drive_${driveResult.fileId}`
+      } catch (driveErr) {
+        console.error('Google Drive Upload Error:', driveErr)
+        return {
+          error: driveErr instanceof Error ? driveErr.message : 'Google Drive upload failed. Please check credentials.',
         }
-        return { error: `Storage Error: ${uploadError.message}` }
       }
-
-      // 4. Retrieve Public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from(BUCKET_NAME)
-        .getPublicUrl(filePath)
-
-      finalFileUrl = publicUrl
-      finalFilePath = filePath
     }
 
     // 5. Insert Record into Database
@@ -126,12 +116,14 @@ export async function deleteDocument(id: string) {
     return { error: 'Document not found.' }
   }
 
-  const { error: storageError } = await supabase.storage
-    .from(BUCKET_NAME)
-    .remove([document.file_path])
+  if (document.file_path && !document.file_path.startsWith('drive_') && document.file_path !== 'google_drive') {
+    const { error: storageError } = await supabase.storage
+      .from('Mjo docs')
+      .remove([document.file_path])
 
-  if (storageError) {
-    return { error: `Storage Error: ${storageError.message}` }
+    if (storageError) {
+      console.warn(`Storage delete warning for ${document.file_path}:`, storageError.message)
+    }
   }
 
   const { error: dbError } = await supabase

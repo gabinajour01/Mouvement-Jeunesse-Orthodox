@@ -2,6 +2,7 @@
 
 import { archiveSubjectsClient } from '@/utils/supabase/archiveSubjectsClient'
 import { revalidatePath } from 'next/cache'
+import { uploadFileToGoogleDrive } from '@/utils/googleDrive'
 
 const BUCKET_NAME = 'archive-docs'
 
@@ -31,24 +32,21 @@ export async function uploadArchiveDocument(formData: FormData) {
     }
 
     const fileExt = file.name.includes('.') ? `.${file.name.split('.').pop()}` : ''
-    const fileName = `${crypto.randomUUID()}${fileExt}`
-    const filePath = `${subject_id}/${fileName}`
+    const customFileName = `${title}${fileExt}`
 
-    // 1. Upload to Project 3 bucket
-    const { error: uploadError } = await archiveSubjectsClient.storage
-      .from(BUCKET_NAME)
-      .upload(filePath, file, { contentType: file.type || 'application/pdf', upsert: true })
-
-    if (uploadError) {
-      return { error: uploadError.message }
+    try {
+      const driveResult = await uploadFileToGoogleDrive({
+        file,
+        customName: customFileName,
+      })
+      finalFileUrl = driveResult.fileUrl
+      finalFilePath = `drive_${driveResult.fileId}`
+    } catch (driveErr) {
+      console.error('Google Drive Upload Error:', driveErr)
+      return {
+        error: driveErr instanceof Error ? driveErr.message : 'Google Drive upload failed. Please check credentials.',
+      }
     }
-
-    const { data: { publicUrl } } = archiveSubjectsClient.storage
-      .from(BUCKET_NAME)
-      .getPublicUrl(filePath)
-
-    finalFileUrl = publicUrl
-    finalFilePath = filePath
   }
 
   // 2. Insert record into Project 3 subject_documents
