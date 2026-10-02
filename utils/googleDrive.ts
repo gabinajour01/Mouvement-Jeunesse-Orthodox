@@ -44,29 +44,74 @@ export async function uploadFileToGoogleDrive({
   file: File
   customName?: string
 }): Promise<{ fileId: string; fileUrl: string; webViewLink: string }> {
+  const appsScriptUrl = process.env.GOOGLE_APPS_SCRIPT_URL
+  const fileName = customName || file.name
+  const mimeType = file.type || 'application/octet-stream'
+
+  // If Google Apps Script Web App is configured, upload through it (bypasses service account quota)
+  if (appsScriptUrl) {
+    const arrayBuffer = await file.arrayBuffer()
+    const base64 = Buffer.from(arrayBuffer).toString('base64')
+    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
+
+    const response = await fetch(appsScriptUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        base64,
+        fileName,
+        mimeType,
+        folderId,
+      }),
+      redirect: 'follow',
+    })
+
+    const data = await response.json()
+    if (!data.success) {
+      throw new Error(data.error || 'Failed to upload file to Google Drive.')
+    }
+
+    const directDownload = `https://drive.google.com/uc?export=download&id=${data.fileId}`
+    return {
+      fileId: data.fileId,
+      fileUrl: directDownload,
+      webViewLink: data.fileUrl || directDownload,
+    }
+  }
+
   const auth = getGoogleAuth()
   const drive = google.drive({ version: 'v3', auth })
 
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || undefined
-  const fileName = customName || file.name
-  const mimeType = file.type || 'application/octet-stream'
 
   // Convert Web File arrayBuffer to Node Buffer and readable stream
   const arrayBuffer = await file.arrayBuffer()
   const buffer = Buffer.from(arrayBuffer)
   const stream = Readable.from(buffer)
 
-  const response = await drive.files.create({
-    requestBody: {
-      name: fileName,
-      parents: folderId ? [folderId] : undefined,
-    },
-    media: {
-      mimeType,
-      body: stream,
-    },
-    fields: 'id, name, webViewLink, webContentLink',
-  })
+  let response
+  try {
+    response = await drive.files.create({
+      requestBody: {
+        name: fileName,
+        parents: folderId ? [folderId] : undefined,
+      },
+      media: {
+        mimeType,
+        body: stream,
+      },
+      fields: 'id, name, webViewLink, webContentLink',
+      supportsAllDrives: true,
+    })
+  } catch (createErr: unknown) {
+    const errMsg = createErr instanceof Error ? createErr.message : String(createErr)
+    if (errMsg.includes('storage quota') || errMsg.includes('Service Accounts do not have storage quota')) {
+      throw new Error(
+        'Google Service Accounts have 0 GB storage quota on personal Google Drives. Please set up the Google Apps Script Web App (GOOGLE_APPS_SCRIPT_URL) or switch to the "Google Drive Link" option to paste your link directly.'
+      )
+    }
+    throw createErr
+  }
 
   const fileId = response.data.id
   if (!fileId) {
@@ -81,6 +126,7 @@ export async function uploadFileToGoogleDrive({
         role: 'reader',
         type: 'anyone',
       },
+      supportsAllDrives: true,
     })
   } catch (permError) {
     console.warn('Could not set public permission on Drive file:', permError)
@@ -94,4 +140,16 @@ export async function uploadFileToGoogleDrive({
     fileUrl: webViewLink,
     webViewLink,
   }
+}
+
+export function formatDocumentUrl(url: string): string {
+  if (!url) return '#'
+  
+  // Extract ID from drive.google.com/file/d/ID or docs.google.com/.../d/ID
+  const match = url.match(/\/(?:file|document|presentation|spreadsheets)\/d\/([-\w]+)/)
+  if (match && match[1]) {
+    return `https://drive.google.com/uc?export=download&id=${match[1]}`
+  }
+
+  return url
 }

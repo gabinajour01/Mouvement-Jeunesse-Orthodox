@@ -57,37 +57,9 @@ export default function UploadForm({ subjects }: { subjects: any[] }) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Source</label>
-        <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-md border border-slate-200">
-          <button
-            type="button"
-            onClick={() => setUploadMode('file')}
-            className={`py-1.5 text-xs font-semibold rounded transition ${uploadMode === 'file' ? 'bg-white text-[#17295d] shadow-sm' : 'text-slate-600'}`}
-          >
-            Upload File
-          </button>
-          <button
-            type="button"
-            onClick={() => setUploadMode('drive')}
-            className={`py-1.5 text-xs font-semibold rounded transition ${uploadMode === 'drive' ? 'bg-white text-[#17295d] shadow-sm' : 'text-slate-600'}`}
-          >
-            Google Drive Link
-          </button>
-        </div>
+        <label className="block text-sm font-medium text-gray-700">File (PDF, DOCX, PPTX, etc.)</label>
+        <input type="file" name="file" required className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer" />
       </div>
-
-      {uploadMode === 'file' ? (
-        <div>
-          <label className="block text-sm font-medium text-gray-700">File</label>
-          <input type="file" name="file" required={uploadMode === 'file'} className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-        </div>
-      ) : (
-        <div>
-          <label className="block text-sm font-medium text-gray-700">Google Drive Link</label>
-          <input type="url" name="file_url" required={uploadMode === 'drive'} placeholder="https://drive.google.com/file/d/.../view" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border text-sm" />
-          <p className="mt-1 text-xs text-slate-500">Ensure link sharing is set to &ldquo;Anyone with the link can view&rdquo;.</p>
-        </div>
-      )}
 
       <button type="submit" disabled={loading} className="bg-blue-600 text-white px-4 py-2 rounded shadow hover:bg-blue-700 disabled:opacity-50 font-medium text-sm">
         {loading ? 'Saving...' : 'Save Document'}

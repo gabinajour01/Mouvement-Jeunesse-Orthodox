@@ -3,6 +3,7 @@
 import UploadDocumentModal from '@/components/UploadDocumentModal'
 import { useMemo, useState } from 'react'
 import { FileText, ChevronDown, ChevronUp, Layers, Presentation, FileSpreadsheet } from 'lucide-react'
+import { formatDocumentUrl } from '@/utils/documentUrl'
 
 type Subject = {
   id: string
@@ -172,7 +173,7 @@ export default function SubjectsSection({
                       {items.map((doc) => (
                         <li key={doc.id}>
                           <a 
-                            href={doc.file_url} 
+                            href={formatDocumentUrl(doc.file_url)} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="group flex items-center rounded-xl border border-slate-200 bg-white p-3.5 transition-all hover:border-sky-300 hover:shadow-md"

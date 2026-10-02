@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react'
 import UploadArchiveDocumentModal from '@/components/UploadArchiveDocumentModal'
 import { FileText, ChevronDown, ChevronUp, Layers } from 'lucide-react'
+import { formatDocumentUrl } from '@/utils/documentUrl'
 
 type ArchiveSubject = {
   id: string
@@ -159,7 +160,7 @@ export default function ArchiveSubjectsSection({
                       {items.map((doc: ArchiveDocument) => (
                         <li key={doc.id}>
                           <a
-                            href={doc.file_url}
+                            href={formatDocumentUrl(doc.file_url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="group flex items-center rounded-xl border border-slate-200 bg-white p-3.5 transition-all hover:border-sky-300 hover:shadow-md"
