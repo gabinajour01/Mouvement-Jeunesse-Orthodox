@@ -6,31 +6,50 @@ import { revalidatePath } from 'next/cache'
 const BUCKET_NAME = 'archive-docs'
 
 export async function uploadArchiveDocument(formData: FormData) {
-  const file = formData.get('file') as File
+  const uploadMode = String(formData.get('upload_mode') || 'file')
+  const externalUrl = String(formData.get('file_url') || '').trim()
+  const file = formData.get('file') as File | null
   const title = String(formData.get('title') || '').trim()
   const subtitle = String(formData.get('subtitle') || '').trim()
   const subject_id = String(formData.get('subject_id') || '').trim()
 
-  if (!file || file.size === 0 || !title || !subtitle || !subject_id) {
+  if (!title || !subtitle || !subject_id) {
     return { error: 'All fields are required.' }
   }
 
-  const fileExt = file.name.includes('.') ? `.${file.name.split('.').pop()}` : ''
-  const fileName = `${crypto.randomUUID()}${fileExt}`
-  const filePath = `${subject_id}/${fileName}`
+  let finalFileUrl = ''
+  let finalFilePath = 'google_drive'
 
-  // 1. Upload to Project 3 bucket
-  const { error: uploadError } = await archiveSubjectsClient.storage
-    .from(BUCKET_NAME)
-    .upload(filePath, file, { contentType: file.type || 'application/pdf', upsert: true })
+  if (uploadMode === 'link' || externalUrl) {
+    if (!externalUrl) {
+      return { error: 'Please provide a valid document link.' }
+    }
+    finalFileUrl = externalUrl
+  } else {
+    if (!file || file.size === 0) {
+      return { error: 'Please select a file to upload or enter a link.' }
+    }
 
-  if (uploadError) {
-    return { error: uploadError.message }
+    const fileExt = file.name.includes('.') ? `.${file.name.split('.').pop()}` : ''
+    const fileName = `${crypto.randomUUID()}${fileExt}`
+    const filePath = `${subject_id}/${fileName}`
+
+    // 1. Upload to Project 3 bucket
+    const { error: uploadError } = await archiveSubjectsClient.storage
+      .from(BUCKET_NAME)
+      .upload(filePath, file, { contentType: file.type || 'application/pdf', upsert: true })
+
+    if (uploadError) {
+      return { error: uploadError.message }
+    }
+
+    const { data: { publicUrl } } = archiveSubjectsClient.storage
+      .from(BUCKET_NAME)
+      .getPublicUrl(filePath)
+
+    finalFileUrl = publicUrl
+    finalFilePath = filePath
   }
-
-  const { data: { publicUrl } } = archiveSubjectsClient.storage
-    .from(BUCKET_NAME)
-    .getPublicUrl(filePath)
 
   // 2. Insert record into Project 3 subject_documents
   const { error: dbError } = await archiveSubjectsClient
@@ -39,12 +58,14 @@ export async function uploadArchiveDocument(formData: FormData) {
       subject_id,
       title,
       subtitle,
-      file_path: filePath,
-      file_url: publicUrl,
+      file_path: finalFilePath,
+      file_url: finalFileUrl,
     })
 
   if (dbError) {
-    await archiveSubjectsClient.storage.from(BUCKET_NAME).remove([filePath])
+    if (finalFilePath !== 'google_drive') {
+      await archiveSubjectsClient.storage.from(BUCKET_NAME).remove([finalFilePath])
+    }
     return { error: dbError.message }
   }
 
