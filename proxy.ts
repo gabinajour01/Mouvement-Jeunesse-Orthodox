@@ -3,6 +3,10 @@ import { updateSession } from './utils/supabase/middleware'
 import { createServerClient } from '@supabase/ssr'
 
 export async function proxy(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith('/api')) {
+    return NextResponse.next()
+  }
+
   const { supabaseResponse, user } = await updateSession(request)
 
   const isLoginPage = request.nextUrl.pathname.startsWith('/login')
@@ -103,6 +107,6 @@ export const config = {
      * - favicon.ico (favicon file)
      * Feel free to modify this pattern to include more paths.
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|api|.*\\\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }

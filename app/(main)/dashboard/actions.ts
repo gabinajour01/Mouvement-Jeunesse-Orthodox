@@ -34,13 +34,7 @@ export async function uploadDocument(formData: FormData) {
         return { error: 'Please select a file to upload or enter a link.' }
       }
 
-      // 1. Verify the signed-in session
-      const { data: { user }, error: authError } = await supabase.auth.getUser()
-      if (authError || !user) {
-        return { error: 'Your session has expired. Please sign in again before uploading.' }
-      }
-
-      // 2. Upload file directly to Google Drive
+      // 1. Upload file directly to Google Drive
       const fileExt = file.name.includes('.') ? `.${file.name.split('.').pop()}` : ''
       const customFileName = `${title}${fileExt}`
 

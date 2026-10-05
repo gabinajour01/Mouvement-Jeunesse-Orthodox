@@ -54,28 +54,46 @@ export async function uploadFileToGoogleDrive({
     const base64 = Buffer.from(arrayBuffer).toString('base64')
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID
 
-    const response = await fetch(appsScriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        base64,
-        fileName,
-        mimeType,
-        folderId,
-      }),
-      redirect: 'follow',
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 90000) // 90 seconds timeout
 
-    const data = await response.json()
-    if (!data.success) {
-      throw new Error(data.error || 'Failed to upload file to Google Drive.')
-    }
+    try {
+      const response = await fetch(appsScriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base64,
+          fileName,
+          mimeType,
+          folderId,
+        }),
+        redirect: 'follow',
+        signal: controller.signal,
+      })
 
-    const directDownload = `https://drive.google.com/uc?export=download&id=${data.fileId}`
-    return {
-      fileId: data.fileId,
-      fileUrl: directDownload,
-      webViewLink: data.fileUrl || directDownload,
+      clearTimeout(timeout)
+
+      if (!response.ok) {
+        throw new Error(`Google Drive service returned status ${response.status}`)
+      }
+
+      const data = await response.json()
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to upload file to Google Drive.')
+      }
+
+      const directDownload = `https://drive.google.com/uc?export=download&id=${data.fileId}`
+      return {
+        fileId: data.fileId,
+        fileUrl: directDownload,
+        webViewLink: data.fileUrl || directDownload,
+      }
+    } catch (err: unknown) {
+      clearTimeout(timeout)
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('Upload to Google Drive timed out after 90 seconds. Please check your internet connection or use the Google Drive Link option for large files.')
+      }
+      throw err
     }
   }
 
