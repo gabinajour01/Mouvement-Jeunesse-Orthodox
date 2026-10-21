@@ -40,25 +40,39 @@ export default async function Home() {
   ) || null
 
   // 3. Fetch Project 3 (Archive Subjects with Subtitles & Documents)
-  const [
-    { data: archiveSubjects, error: archiveSubjectsError },
-    { data: archiveDocuments, error: archiveDocsError },
-  ] = await Promise.all([
-    archiveSubjectsClient
-      .from('subjects')
-      .select('*, subtitles(*)')
-      .order('created_at', { ascending: true }),
-    archiveSubjectsClient
-      .from('subject_documents')
-      .select('*')
-      .order('created_at', { ascending: false }),
-  ])
+  let archiveSubjects: any[] = []
+  let archiveDocuments: any[] = []
 
-  if (archiveSubjectsError) {
-    console.error('Project 3 Subjects Error:', archiveSubjectsError.message)
-  }
-  if (archiveDocsError) {
-    console.error('Project 3 Documents Error:', archiveDocsError.message)
+  if (archiveSubjectsClient) {
+    try {
+      const [
+        { data: subjectsData, error: archiveSubjectsError },
+        { data: docsData, error: archiveDocsError },
+      ] = await Promise.all([
+        archiveSubjectsClient
+          .from('subjects')
+          .select('*, subtitles(*)')
+          .order('created_at', { ascending: true }),
+        archiveSubjectsClient
+          .from('subject_documents')
+          .select('*')
+          .order('created_at', { ascending: false }),
+      ])
+
+      if (archiveSubjectsError) {
+        console.warn('Project 3 Subjects Notice:', archiveSubjectsError.message)
+      } else if (subjectsData) {
+        archiveSubjects = subjectsData
+      }
+
+      if (archiveDocsError) {
+        console.warn('Project 3 Documents Notice:', archiveDocsError.message)
+      } else if (docsData) {
+        archiveDocuments = docsData
+      }
+    } catch (err) {
+      console.warn('Project 3 Fetch Notice:', err)
+    }
   }
 
   // 4. Admin verification

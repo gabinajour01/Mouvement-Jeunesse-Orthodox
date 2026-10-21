@@ -27,36 +27,51 @@ const programs = [
 
 export default function ProgramsPanel() {
   return (
-    <section className="relative z-20 mx-auto -mt-24 max-w-[1272px] rounded-[22px] bg-white p-5 shadow-2xl sm:p-7">
-      <div className="mb-6 flex items-end justify-between gap-4 px-1">
+    <section className="relative z-20 mx-3 -mt-10 max-w-[1272px] rounded-[20px] bg-white p-4 shadow-2xl sm:mx-6 sm:-mt-20 sm:p-7 xl:mx-auto">
+      <div className="mb-5 flex items-end justify-between gap-4 px-1 sm:mb-6">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.25em] text-sky-600">What we do</p>
-          <h2 className="mt-2 text-2xl font-bold text-[#17295d] sm:text-3xl">Explore our community</h2>
+          <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-sky-600 sm:text-xs">
+            What we do
+          </p>
+          <h2 className="mt-1.5 text-xl font-bold text-[#17295d] sm:mt-2 sm:text-3xl">
+            Explore our community
+          </h2>
         </div>
-        <span className="hidden text-sm text-slate-500 sm:block">Learning, growth, and opportunity</span>
+        <span className="hidden text-sm text-slate-500 sm:block">
+          Learning, growth, and opportunity
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
         {programs.map((program) => (
-          <article key={program.title} className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg">
+          <article
+            key={program.title}
+            className="group overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+          >
             <div
-              className="h-44 bg-cover"
+              className="h-36 sm:h-44 bg-cover bg-center transition-transform duration-300 group-hover:scale-105"
               style={{
                 backgroundImage: `url('${program.image}')`,
                 backgroundPosition: program.imagePosition || 'center',
               }}
             />
-            <div className="p-4">
-              <h3 className="text-lg font-bold text-[#17295d]">{program.title}</h3>
-              <p className="mt-2 text-sm leading-6 text-slate-600">{program.description}</p>
+            <div className="p-3.5 sm:p-4">
+              <h3 className="text-base font-bold text-[#17295d] sm:text-lg">
+                {program.title}
+              </h3>
+              <p className="mt-1.5 text-xs sm:text-sm leading-5 sm:leading-6 text-slate-600">
+                {program.description}
+              </p>
             </div>
           </article>
         ))}
       </div>
 
-      <div className="mt-7 flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-5 text-center sm:flex-row sm:text-left">
-        <p className="text-sm font-semibold text-[#17295d]">Rooted in Batroun. Built for every generation.</p>
-        <div className="flex items-center gap-4 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+      <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-slate-200 pt-5 text-center sm:mt-7 sm:flex-row sm:text-left">
+        <p className="text-xs sm:text-sm font-semibold text-[#17295d]">
+          Rooted in Batroun. Built for every generation.
+        </p>
+        <div className="flex items-center gap-3 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
           <span>Since 1942</span>
           <span className="h-1 w-1 rounded-full bg-sky-400" />
           <span>One community</span>

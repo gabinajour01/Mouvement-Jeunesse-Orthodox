@@ -50,6 +50,10 @@ export async function uploadArchiveDocument(formData: FormData) {
   }
 
   // 2. Insert record into Project 3 subject_documents
+  if (!archiveSubjectsClient) {
+    return { error: 'Archive database credentials are not configured.' }
+  }
+
   const { error: dbError } = await archiveSubjectsClient
     .from('subject_documents')
     .insert({
@@ -72,6 +76,10 @@ export async function uploadArchiveDocument(formData: FormData) {
 }
 
 export async function deleteArchiveDocument(id: string, filePath: string) {
+  if (!archiveSubjectsClient) {
+    return { error: 'Archive database credentials are not configured.' }
+  }
+
   const { error: dbError } = await archiveSubjectsClient
     .from('subject_documents')
     .delete()

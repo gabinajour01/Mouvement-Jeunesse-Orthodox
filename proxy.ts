@@ -9,6 +9,11 @@ export async function proxy(request: NextRequest) {
 
   const { supabaseResponse, user } = await updateSession(request)
 
+  // Allow Server Actions to run and manage their own responses/redirects
+  if (request.headers.has('next-action')) {
+    return supabaseResponse
+  }
+
   const isLoginPage = request.nextUrl.pathname.startsWith('/login')
 
   if (user) {

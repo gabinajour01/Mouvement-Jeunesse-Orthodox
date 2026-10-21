@@ -62,6 +62,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (target === 'archive') {
+      if (!archiveSubjectsClient) {
+        return NextResponse.json(
+          { error: 'Archive database credentials are not configured.' },
+          { status: 500 }
+        )
+      }
       const { error: dbError } = await archiveSubjectsClient
         .from('subject_documents')
         .insert({
